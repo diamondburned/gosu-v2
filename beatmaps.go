@@ -1,11 +1,5 @@
 package osu
 
-type SearchBeatmapsResults struct {
-	Beatmapsets           []Beatmapset `json:"beatmapsets"`
-	RecommendedDifficulty float64      `json:"recommended_difficulty"`
-	Total                 int64        `json:"total"`
-}
-
 type Beatmapset struct {
 	ID                int64     `json:"id"`
 	Title             string    `json:"title"`
@@ -117,3 +111,8 @@ const (
 	StatusPending   Status = "pending"
 	StatusGraveyard Status = "graveyard"
 )
+
+type Cursor struct {
+	ApprovedDate string `json:"approved_date"`
+	ID           string `json:"_id"`
+}

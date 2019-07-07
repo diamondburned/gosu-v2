@@ -1,6 +1,7 @@
 package osu
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 )
@@ -22,30 +23,50 @@ const (
 
 type SearchOpts struct {
 	Query    string         `schema:"q,required"`
-	Mode     Mode           `schema:"m"`
+	Mode     ModeInt        `schema:"m"`
 	Category SearchCategory `schema:"s"`
 }
 
 const SearchEndpoint = "https://osu.ppy.sh/beatmapsets/search"
 
+type SearchBeatmapsResults struct {
+	Beatmapsets           []Beatmapset `json:"beatmapsets"`
+	Cursor                *Cursor      `json:"cursor,omitempty"`
+	RecommendedDifficulty float64      `json:"recommended_difficulty"`
+	Total                 int64        `json:"total"`
+}
+
 func SearchBeatmaps(opts SearchOpts) (*SearchBeatmapsResults, error) {
-	var form url.Values
+	if opts.Category == "" {
+		opts.Category = SearchCategoryRanked
+	}
+
+	var form = url.Values{}
 
 	if err := Schema.Encode(opts, form); err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", SearchEndpoint, nil)
+	println(form.Encode())
+
+	req, err := http.NewRequest(
+		"GET", SearchEndpoint+"?"+form.Encode(), nil,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	req.Form = form
-
-	r, err := Client.Do(req)
+	res, err := Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	// todo
+	var bmr SearchBeatmapsResults
+
+	if err := json.NewDecoder(res.Body).Decode(&bmr); err != nil {
+		return nil, err
+	}
+
+	return &bmr, nil
 }
