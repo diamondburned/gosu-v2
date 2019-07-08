@@ -36,7 +36,7 @@ type SearchBeatmapsResults struct {
 	Total                 int64        `json:"total"`
 }
 
-func SearchBeatmaps(opts SearchOpts) (*SearchBeatmapsResults, error) {
+func (s *Session) SearchBeatmaps(opts SearchOpts) (*SearchBeatmapsResults, error) {
 	if opts.Category == "" {
 		opts.Category = SearchCategoryRanked
 	}

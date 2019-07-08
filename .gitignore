@@ -1,1 +1,5 @@
-_testdata/
+# Actually contains important data
+_testdata/*
+
+# Just something to generate above data
+!_testdata/gentest/

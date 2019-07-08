@@ -1,21 +1,23 @@
 package osu
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+
+	"github.com/gorilla/schema"
 )
 
 // Session contains information about the osu! session
 type Session struct {
-	username string
-	password string
+	SessionToken string
 
+	login  loginForm
 	client *http.Client
+	schema *schema.Encoder
 }
 
 // NewSession initializes a Session struct with an in-memory cookiejar
@@ -29,9 +31,12 @@ func NewSession(username, password string) (*Session, error) {
 	client.Jar = jar
 
 	return &Session{
-		username: username,
-		password: password,
-		client:   client,
+		login: loginForm{
+			Username: username,
+			Password: password,
+		},
+		client: client,
+		schema: schema.NewEncoder(),
 	}, nil
 }
 
@@ -63,57 +68,6 @@ func (s *Session) SetSessionToken(t string) {
 			Value: t,
 		},
 	)
-}
-
-// Login tries to authenticate with the osu! servers and set the
-// tokens in place
-func (s *Session) Login() error {
-	URL, _ := url.Parse("https://osu.ppy.sh/home")
-
-	// Access this site for the token
-	r, err := s.get(URL.String())
-	if err != nil {
-		return err
-	}
-
-	r.Body.Close()
-
-	v := url.Values{}
-
-	for _, c := range s.client.Jar.Cookies(URL) {
-		if c.Name == "XSRF-TOKEN" {
-			v.Set("_token", c.Value)
-			break
-		}
-	}
-
-	if v.Get("_token") == "" {
-		return errors.New("Failed to get XSRF token")
-	}
-
-	v.Set("username", s.username)
-	v.Set("password", s.password)
-
-	r, err = s.post("https://osu.ppy.sh/session?"+v.Encode(), nil)
-	if err != nil {
-		return err
-	}
-
-	defer r.Body.Close()
-
-	if r.StatusCode < 200 || r.StatusCode > 300 {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return err
-		}
-
-		return fmt.Errorf(
-			"Invalid status code %d\n%s",
-			r.StatusCode, string(body),
-		)
-	}
-
-	return nil
 }
 
 // DownloadBeatmap returns a body which is the content of the beatmap.
